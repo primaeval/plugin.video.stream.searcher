@@ -202,10 +202,10 @@ def folder(id,path):
         context_items = []
         if path in folders:
             fancy_label = "[COLOR yellow][B]%s[/B][/COLOR] " % label
-            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Unsubscribe', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_folder, id=id, path=path))))
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove Folder', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_folder, id=id, path=path))))
         else:
             fancy_label = "[B]%s[/B]" % label
-            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Subscribe', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_folder, id=id, path=path))))
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add Folder', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_folder, id=id, path=path))))
         items.append(
         {
             'label': fancy_label,
