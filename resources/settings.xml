@@ -1,2 +1,5 @@
 <settings>
+<category label="General">
+<setting id="play" label="Play Stream" type="bool" default="false" />
+</category>
 </settings>
