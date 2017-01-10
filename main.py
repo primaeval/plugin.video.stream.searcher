@@ -133,6 +133,7 @@ def add_channel():
     channel = d.input("Add Channel")
     if channel:
         channels[channel] = ""
+    xbmc.executebuiltin('Container.Refresh')
 
 
 @plugin.route('/remove_channel')
@@ -145,6 +146,7 @@ def remove_channel():
         return
     channel = channel_list[which]
     del channels[channel]
+    xbmc.executebuiltin('Container.Refresh')
 
 @plugin.route('/remove_this_channel/<channel>')
 def remove_this_channel(channel):
@@ -173,6 +175,7 @@ def import_channels():
                 if len(channel_url) == 2:
                     name = channel_url[0]
                     channels[name] = ""
+    xbmc.executebuiltin('Container.Refresh')
 
 
 @plugin.route('/folder/<id>/<path>')
