@@ -334,13 +334,14 @@ def stream_search(channel):
                     label = remove_formatting(f["label"])
                     file = f["file"]
                     streams[id][file] = label
-    channel_search = channel.lower().replace(' ','')
+    channel_search = channel.decode("utf8").lower().replace(' ','')
     stream_list = []
     for id in sorted(streams):
         files = streams[id]
         for f in sorted(files, key=lambda k: files[k]):
             label = files[f]
-            label_search = label.lower().replace(' ','')
+            label_search = label.decode("utf8").lower().replace(' ','')
+            log((type(channel_search),type(label_search),channel_search,label_search))
             if label_search in channel_search or channel_search in label_search:
                 stream_list.append((id,f,label))
     labels = ["[%s] %s" % (x[0],x[2]) for x in stream_list]
