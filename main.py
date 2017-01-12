@@ -192,7 +192,8 @@ def export_channels():
 @plugin.route('/folder/<id>/<path>')
 def folder(id,path):
     folders = plugin.get_storage('folders')
-    response = RPC.files.get_directory(media="files", directory=path, properties=["thumbnail"])
+    try: response = RPC.files.get_directory(media="files", directory=path, properties=["thumbnail"])
+    except: return
     files = response["files"]
     dirs = dict([[remove_formatting(f["label"]), f["file"]] for f in files if f["filetype"] == "directory"])
     links = {}
@@ -243,7 +244,8 @@ def pvr():
         urls = urls + xbmcvfs.listdir("pvr://channels/%s/All channels/" % group)[1]
     for group in ["radio","tv"]:
         groupid = "all%s" % group
-        json_query = RPC.PVR.get_channels(channelgroupid=groupid, properties=[ "thumbnail", "channeltype", "hidden", "locked", "channel", "lastplayed", "broadcastnow" ] )
+        try: json_query = RPC.PVR.get_channels(channelgroupid=groupid, properties=[ "thumbnail", "channeltype", "hidden", "locked", "channel", "lastplayed", "broadcastnow" ] )
+        except: continue
         if "channels" in json_query:
             for channel in json_query["channels"]:
                 channelname = channel["label"]
@@ -273,7 +275,8 @@ def subscribe():
         ids[id] = id
     all_addons = []
     for type in ["xbmc.addon.video", "xbmc.addon.audio"]:
-        response = RPC.addons.get_addons(type=type,properties=["name", "thumbnail"])
+        try: response = RPC.addons.get_addons(type=type,properties=["name", "thumbnail"])
+        except: continue
         if "addons" in response:
             found_addons = response["addons"]
             all_addons = all_addons + found_addons
@@ -337,7 +340,8 @@ def stream_search(channel):
         id = folders[folder]
         if not id in streams:
             streams[id] = {}
-        response = RPC.files.get_directory(media="files", directory=path)
+        try: response = RPC.files.get_directory(media="files", directory=path)
+        except: continue
         if not 'error' in response:
             files = response["files"]
             for f in files:
