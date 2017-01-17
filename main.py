@@ -6,7 +6,8 @@ from rpc import RPC
 import requests
 import random
 import sqlite3
-from datetime import datetime,timedelta
+#from datetime import datetime,timedelta
+import datetime
 import time
 #import urllib
 import HTMLParser
@@ -17,6 +18,7 @@ import os
 #import shutil
 #from rpc import RPC
 from types import *
+import json
 
 plugin = Plugin()
 big_list_view = False
@@ -110,9 +112,7 @@ def pvr_unsubscribe():
 @plugin.route('/add_folder/<id>/<path>')
 def add_folder(id,path):
     folders = plugin.get_storage('folders')
-    #ids = plugin.get_storage('ids')
     folders[path] = id
-    #ids[id] = id
     xbmc.executebuiltin('Container.Refresh')
 
 @plugin.route('/remove_folder/<id>/<path>')
@@ -120,6 +120,12 @@ def remove_folder(id,path):
     folders = plugin.get_storage('folders')
     del folders[path]
     xbmc.executebuiltin('Container.Refresh')
+
+@plugin.route('/clear_cache')
+def clear_cache():
+    last_read = plugin.get_storage('last_read')
+    last_read.clear()
+    xbmcvfs.delete('special://profile/addon_data/plugin.video.stream.searcher/cache.json')
 
 @plugin.route('/clear')
 def clear():
@@ -210,18 +216,18 @@ def folder(id,path):
     items = []
 
     for label in sorted(dirs):
-        path = dirs[label]
+        folder_path = dirs[label]
         context_items = []
         if path in folders:
             fancy_label = "[COLOR yellow][B]%s[/B][/COLOR] " % label
-            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove Folder', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_folder, id=id, path=path))))
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove Folder', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_folder, id=id, path=folder_path))))
         else:
             fancy_label = "[B]%s[/B]" % label
-            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add Folder', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_folder, id=id, path=path))))
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add Folder', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_folder, id=id, path=folder_path))))
         items.append(
         {
             'label': fancy_label,
-            'path': plugin.url_for('folder',id=id, path=path),
+            'path': plugin.url_for('folder',id=id, path=folder_path),
             'thumbnail': get_icon_path('tv'),
             'context_menu': context_items,
         })
@@ -332,23 +338,52 @@ def subscribe():
 
 @plugin.route('/stream_search/<channel>')
 def stream_search(channel):
+    file_name = 'special://profile/addon_data/plugin.video.stream.searcher/cache.json'
     folders = plugin.get_storage('folders')
+    last_read = plugin.get_storage('last_read')
     streams = {}
+    f = xbmcvfs.File(file_name,'rb')
+    data = f.read()
+    f.close()
+    if data:
+        streams = json.loads(data)
 
     for folder in folders:
         path = folder
         id = folders[folder]
+        now = datetime.datetime.now()
+        last_time = last_read.get(folder)
+        if last_time:
+            format = "%Y-%m-%dT%H:%M:%S.%f"
+            try:
+                last_time = datetime.datetime.strptime(last_time, format)
+            except TypeError:
+                last_time = datetime.datetime(*(time.strptime(last_time, format)[0:6]))
+            hours = int(plugin.get_setting('cache.hours'))
+            if last_time > now - datetime.timedelta(hours=hours):
+                continue
+        last_read[folder] = now.isoformat()
+
         if not id in streams:
             streams[id] = {}
         try: response = RPC.files.get_directory(media="files", directory=path)
         except: continue
         if not 'error' in response:
+            if 'files' not in response:
+                continue
             files = response["files"]
             for f in files:
                 if f["filetype"] == "file":
                     label = remove_formatting(f["label"])
                     file = f["file"]
                     streams[id][file] = label
+
+
+    f = xbmcvfs.File(file_name,'wb')
+    data = json.dumps(streams,indent=2)
+    f.write(data)
+    f.close()
+
     channel_search = channel.decode("utf8").lower().replace(' ','')
     stream_list = []
     for id in sorted(streams):
@@ -394,6 +429,7 @@ def index():
 
     context_items = []
     context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Folders', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear))))
+    context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Reset Cache', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_cache))))
     items.append(
     {
         'label': "Folders",

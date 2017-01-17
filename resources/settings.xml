@@ -1,2 +1,5 @@
 <settings>
+    <category label="General">
+        <setting id="cache.hours" label="Refresh Folders Period (hours)" type="number" default="0" />
+    </category>
 </settings>
