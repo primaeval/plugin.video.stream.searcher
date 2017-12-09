@@ -376,11 +376,14 @@ def stream_search(channel):
                 if f["filetype"] == "file":
                     label = remove_formatting(f["label"])
                     file = f["file"]
+                    log2(("XXX",id,label,file))
                     if id == "plugin.video.playonbrowser":
+                        log2("YYY")
                         match = re.search('name=(.*)["&]',file)
                         if match:
                             label = match.group(1)
                             label = label.replace('+',' ')
+                            log2(("ZZZ",label))
                     streams[id][file] = label
 
 
