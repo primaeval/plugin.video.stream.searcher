@@ -379,7 +379,7 @@ def stream_search(channel):
                     log2(("XXX",id,label,file))
                     if id == "plugin.video.playonbrowser":
                         log2("YYY")
-                        match = re.search('name=(.*)["&]',file)
+                        match = re.search('name=(.*)["&]?',file)
                         if match:
                             label = match.group(1)
                             label = label.replace('+',' ')
