@@ -24,10 +24,10 @@ plugin = Plugin()
 big_list_view = False
 
 def log2(v):
-    xbmc.log(repr(v))
+    xbmc.log(repr(v),xbmc.LOGERROR)
 
 def log(v):
-    xbmc.log(re.sub(',',',\n',repr(v)))
+    xbmc.log(repr(v),xbmc.LOGERROR)
 
 def get_icon_path(icon_name):
     addon_path = xbmcaddon.Addon().getAddonInfo("path")
@@ -198,9 +198,18 @@ def export_channels():
 @plugin.route('/choose_folders/<channel>')
 def choose_folders(channel):
     folders = plugin.get_storage('folders')
+    paths = plugin.get_storage('paths')
     channel_folders = plugin.get_storage('channel_folders')
     folders_list = sorted(list(folders))
-    what = xbmcgui.Dialog().multiselect("Choose Folders: %s" % channel,folders_list)
+    labels = []
+
+    for fl in folders_list:
+        if fl in paths:
+            label = "[%s] %s" % (paths[fl],fl)
+        else:
+            label = fl
+        labels.append(label)
+    what = xbmcgui.Dialog().multiselect("Choose Folders: %s" % channel,labels)
     if what == None:
         try: del channel_folders[channel]
         except: pass
@@ -215,6 +224,7 @@ def choose_folders(channel):
 @plugin.route('/folder/<id>/<path>')
 def folder(id,path):
     folders = plugin.get_storage('folders')
+    paths = plugin.get_storage('paths')
     try: response = RPC.files.get_directory(media="files", directory=path, properties=["thumbnail"])
     except: return
     files = response["files"]
@@ -234,6 +244,7 @@ def folder(id,path):
 
     for label in sorted(dirs):
         folder_path = dirs[label]
+        paths[folder_path] = label
         context_items = []
         if path in folders:
             fancy_label = "[COLOR yellow][B]%s[/B][/COLOR] " % label
@@ -292,6 +303,7 @@ def pvr():
 @plugin.route('/subscribe')
 def subscribe():
     folders = plugin.get_storage('folders')
+    paths = plugin.get_storage('paths')
     ids = {}
     for folder in folders:
         id = folders[folder]
@@ -335,6 +347,7 @@ def subscribe():
         label = remove_formatting(addon['name'])
         id = addon['addonid']
         path = "plugin://%s" % id
+        paths[path] = label
         context_items = []
         if id in ids:
             fancy_label = "[COLOR yellow][B]%s[/B][/COLOR] " % label
