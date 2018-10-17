@@ -195,6 +195,23 @@ def export_channels():
     f.close()
 
 
+@plugin.route('/choose_folders/<channel>')
+def choose_folders(channel):
+    folders = plugin.get_storage('folders')
+    channel_folders = plugin.get_storage('channel_folders')
+    folders_list = sorted(list(folders))
+    what = xbmcgui.Dialog().multiselect("Choose Folders: %s" % channel,folders_list)
+    if what == None:
+        try: del channel_folders[channel]
+        except: pass
+        return
+    selected_folders = {}
+    for i in what:
+        folder = folders_list[i]
+        selected_folders[folder] = folders[folder]
+    channel_folders[channel] = json.dumps(selected_folders)
+
+
 @plugin.route('/folder/<id>/<path>')
 def folder(id,path):
     folders = plugin.get_storage('folders')
@@ -340,6 +357,7 @@ def subscribe():
 def stream_search(channel):
     file_name = 'special://profile/addon_data/plugin.video.stream.searcher/cache.json'
     folders = plugin.get_storage('folders')
+    channel_folders = plugin.get_storage('channel_folders')
     last_read = plugin.get_storage('last_read')
     streams = {}
     f = xbmcvfs.File(file_name,'rb')
@@ -347,6 +365,9 @@ def stream_search(channel):
     f.close()
     if data:
         streams = json.loads(data)
+
+    if channel in channel_folders:
+        folders = json.loads(channel_folders[channel])
 
     for folder in folders:
         path = folder
@@ -424,6 +445,7 @@ def channel_player():
         context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove Channel', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_this_channel, channel=channel))))
         context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Import Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(import_channels))))
         context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_channels))))
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Choose Folders', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_folders, channel=channel))))
         items.append(
         {
             'label': channel,
