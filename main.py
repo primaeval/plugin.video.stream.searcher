@@ -372,12 +372,16 @@ def stream_search(channel):
     folders = plugin.get_storage('folders')
     channel_folders = plugin.get_storage('channel_folders')
     last_read = plugin.get_storage('last_read')
+
+    hours = int(plugin.get_setting('cache.hours'))
+
     streams = {}
-    f = xbmcvfs.File(file_name,'rb')
-    data = f.read()
-    f.close()
-    if data:
-        streams = json.loads(data)
+    if hours:
+        f = xbmcvfs.File(file_name,'rb')
+        data = f.read()
+        f.close()
+        if data:
+            streams = json.loads(data)
 
     if channel in channel_folders:
         folders = json.loads(channel_folders[channel])
