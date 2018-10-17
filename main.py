@@ -430,6 +430,8 @@ def channel_player():
             'path': plugin.url_for('stream_search',channel=channel),
             'thumbnail':get_icon_path('tv'),
             'is_playable': True,
+            'info_type': 'Video',
+            'info':{"mediatype": "movie", "title": channel},
             'context_menu': context_items,
         })
     return items
