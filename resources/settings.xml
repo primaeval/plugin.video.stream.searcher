@@ -1,5 +1,6 @@
 <settings>
     <category label="General">
         <setting id="cache.hours" label="Refresh Folders Period (hours)" type="number" default="0" />
+        <setting id="dialog" label="Use Dialog" type="bool" default="true" />
     </category>
 </settings>

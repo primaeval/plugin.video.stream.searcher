@@ -438,18 +438,34 @@ def stream_search(channel):
             except: label_search = label.lower().replace(' ','')
             if label_search in channel_search or channel_search in label_search:
                 stream_list.append((id,f,label))
-    if len(stream_list) == 1:
-        stream_name = stream_list[0][2]
-        stream_link = stream_list[0][1]
+
+
+    if plugin.get_setting('dialog',bool):
+        if len(stream_list) == 1:
+            stream_name = stream_list[0][2]
+            stream_link = stream_list[0][1]
+        else:
+            labels = ["[%s] %s" % (x[0],x[2]) for x in stream_list]
+            d = xbmcgui.Dialog()
+            which = d.select(channel, labels)
+            if which == -1:
+                return
+            stream_name = stream_list[which][2]
+            stream_link = stream_list[which][1]
+        plugin.set_resolved_url(stream_link)
     else:
-        labels = ["[%s] %s" % (x[0],x[2]) for x in stream_list]
-        d = xbmcgui.Dialog()
-        which = d.select(channel, labels)
-        if which == -1:
-            return
-        stream_name = stream_list[which][2]
-        stream_link = stream_list[which][1]
-    plugin.set_resolved_url(stream_link)
+        items = []
+        for id,f,label in stream_list:
+            items.append({
+                'label':"[%s] %s" % (id,label),
+                'path':f,
+                'thumbnail': get_icon_path('tv'),
+                'is_playable': True,
+                'info_type': 'Video',
+                'info':{"mediatype": "episode", "title": label}
+            })
+        return items
+
 
 @plugin.route('/channel_player')
 def channel_player():
@@ -468,9 +484,9 @@ def channel_player():
             'label': channel,
             'path': plugin.url_for('stream_search',channel=channel),
             'thumbnail':get_icon_path('tv'),
-            'is_playable': True,
+            'is_playable': plugin.get_setting('dialog',bool),
             'info_type': 'Video',
-            'info':{"mediatype": "movie", "title": channel},
+            'info':{"mediatype": "episode", "title": channel},
             'context_menu': context_items,
         })
     return items
