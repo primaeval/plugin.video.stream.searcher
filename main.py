@@ -368,20 +368,15 @@ def subscribe():
 
 @plugin.route('/stream_search/<channel>')
 def stream_search(channel):
-    file_name = 'special://profile/addon_data/plugin.video.stream.searcher/cache.json'
+    return do_stream_search(channel)
+
+
+@plugin.cached(TTL=plugin.get_setting('ttl',int))
+def do_stream_search(channel):
     folders = plugin.get_storage('folders')
     channel_folders = plugin.get_storage('channel_folders')
-    last_read = plugin.get_storage('last_read')
-
-    hours = int(plugin.get_setting('cache.hours'))
 
     streams = {}
-    if hours:
-        f = xbmcvfs.File(file_name,'rb')
-        data = f.read()
-        f.close()
-        if data:
-            streams = json.loads(data)
 
     if channel in channel_folders:
         folders = json.loads(channel_folders[channel])
@@ -389,22 +384,10 @@ def stream_search(channel):
     for folder in folders:
         path = folder
         id = folders[folder]
-        now = datetime.datetime.now()
-        last_time = last_read.get(folder)
-        if last_time:
-            format = "%Y-%m-%dT%H:%M:%S.%f"
-            try:
-                last_time = datetime.datetime.strptime(last_time, format)
-            except TypeError:
-                last_time = datetime.datetime(*(time.strptime(last_time, format)[0:6]))
-            hours = int(plugin.get_setting('cache.hours'))
-            if last_time > now - datetime.timedelta(hours=hours):
-                continue
-        last_read[folder] = now.isoformat()
 
         if not id in streams:
             streams[id] = {}
-        try: response = RPC.files.get_directory(media="files", directory=path)
+        try: response = RPC.files.get_directory(media="files", directory=path, properties=["thumbnail"])
         except: continue
         if not 'error' in response:
             if 'files' not in response:
@@ -419,13 +402,7 @@ def stream_search(channel):
                         if match:
                             label = match.group(1)
                             label = label.replace('+',' ')
-                    streams[id][file] = label
-
-
-    f = xbmcvfs.File(file_name,'wb')
-    data = json.dumps(streams,indent=2)
-    f.write(data)
-    f.close()
+                    streams[id][file] = (label,f["thumbnail"])
 
     try: channel_search = channel.decode("utf8").lower().replace(' ','')
     except: channel_search = channel.lower().replace(' ','')
@@ -433,19 +410,21 @@ def stream_search(channel):
     for id in sorted(streams):
         files = streams[id]
         for f in sorted(files, key=lambda k: files[k]):
-            label = files[f]
+            label,thumbnail = files[f]
             try: label_search = label.decode("utf8").lower().replace(' ','')
             except: label_search = label.lower().replace(' ','')
             if label_search in channel_search or channel_search in label_search:
-                stream_list.append((id,f,label))
+                stream_list.append((id,f,label,thumbnail))
 
+    ids = {x[0] for x in stream_list}
+    id_names = {i:xbmcaddon.Addon(i).getAddonInfo("name") for i in ids}
 
     if plugin.get_setting('dialog',bool):
         if len(stream_list) == 1:
             stream_name = stream_list[0][2]
             stream_link = stream_list[0][1]
         else:
-            labels = ["[%s] %s" % (x[0],x[2]) for x in stream_list]
+            labels = ["%s - %s" % (id_names[x[0]],x[2]) for x in stream_list]
             d = xbmcgui.Dialog()
             which = d.select(channel, labels)
             if which == -1:
@@ -455,11 +434,11 @@ def stream_search(channel):
         plugin.set_resolved_url(stream_link)
     else:
         items = []
-        for id,f,label in stream_list:
+        for id,f,label,thumbnail in stream_list:
             items.append({
-                'label':"[%s] %s" % (id,label),
+                'label':"%s - %s" % (id_names[id],label),
                 'path':f,
-                'thumbnail': get_icon_path('tv'),
+                'thumbnail': thumbnail or get_icon_path('tv'),
                 'is_playable': True,
                 'info_type': 'Video',
                 'info':{"mediatype": "episode", "title": label}

@@ -1,6 +1,6 @@
 <settings>
     <category label="General">
-        <setting id="cache.hours" label="Refresh Folders Period (hours)" type="number" default="0" />
+        <setting id="ttl" label="Channel Search cache timeout (minutes)" type="number" default="1" />
         <setting id="dialog" label="Use Dialog" type="bool" default="true" />
     </category>
 </settings>
